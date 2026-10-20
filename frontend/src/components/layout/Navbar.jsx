@@ -1,74 +1,128 @@
 import React from 'react';
 import { useAthly } from '../../context/AthlyContext';
-import { Flame, Trophy, Sparkles, User, Bell, Activity } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Flame, Trophy, Sparkles, BookOpen, LogIn, LogOut } from 'lucide-react';
 
+/**
+ * Navbar
+ * Authenticated application header redesigned for the luxury wellness editorial aesthetic.
+ * Connects seamlessly with the landing page design language and provides member auth controls.
+ */
 export const Navbar = () => {
   const { profile, rewards, toastMessage, setActiveTab } = useAthly();
+  const { currentUser, logout, openAuthModal } = useAuth();
+
+  const displayName = currentUser?.displayName || profile?.name || (currentUser?.email ? currentUser.email.split('@')[0] : 'Alex Hunter');
+  const initial = displayName ? displayName.charAt(0).toUpperCase() : 'A';
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-[#D9D5CB] bg-[#F4F1E9]/95 backdrop-blur-md">
       {/* Dynamic Notification Toast */}
       {toastMessage && (
-        <div className="bg-emerald-500/15 border-b border-emerald-500/30 px-4 py-2 text-center text-xs font-medium text-emerald-300 flex items-center justify-center gap-2 animate-fadeIn">
-          <Sparkles className="w-4 h-4 text-emerald-400" />
-          <span>{toastMessage}</span>
+        <div className="bg-[#FAF8F3] border-b border-[#C5D99A] px-6 py-2.5 text-center text-xs font-sans text-[#171916] flex items-center justify-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#171916]" />
+          <span className="font-medium">{toastMessage}</span>
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand Logo & Tagline */}
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveTab('progress')}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-[2px] shadow-glow-green">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-              <Activity className="w-5 h-5 text-emerald-400" />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-extrabold tracking-wider bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-                ATHLY
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                AI ACTIVE
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 font-medium tracking-tight hidden sm:block">
-              Your Goal. Our Plan. Your Progress. Your Reward.
-            </p>
-          </div>
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 h-18 flex items-center justify-between">
+        {/* Brand Wordmark & Protocol Badge */}
+        <div 
+          className="flex items-baseline gap-3 cursor-pointer group" 
+          onClick={() => setActiveTab('progress')}
+          title="Return to Daily Overview"
+        >
+          <span className="font-serif text-2xl tracking-[0.12em] font-medium text-[#171916] group-hover:opacity-80 transition-opacity">
+            ATHLY
+          </span>
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] text-[#4B4F48] font-sans border-l border-[#D9D5CB] pl-3 py-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#C5D99A]" />
+            <span>Active Protocol</span>
+          </span>
         </div>
 
-        {/* Live Metrics Pills */}
+        {/* Live Metrics & Profile Controls */}
         <div className="flex items-center gap-3">
-          {/* Streaks Pill */}
+          {/* Editorial Landing Page Toggle */}
           <button 
-            onClick={() => setActiveTab('rewards')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold hover:bg-amber-500/15 transition"
+            type="button"
+            onClick={() => setActiveTab('landing')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF8F3] border border-[#D9D5CB] text-[#171916] text-xs font-medium hover:border-[#171916] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171916]"
+            title="View Public Editorial Landing Page"
           >
-            <Flame className="w-4 h-4 fill-amber-400 text-amber-400 animate-pulse" />
-            <span>{rewards?.currentStreakDays || 5} Day Streak</span>
+            <BookOpen className="w-3.5 h-3.5 text-[#4B4F48]" />
+            <span className="hidden md:inline">Public Landing</span>
           </button>
 
-          {/* Points & Level Pill */}
+          {/* Active Streak Capsule */}
           <button 
+            type="button"
             onClick={() => setActiveTab('rewards')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/15 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF8F3] border border-[#D9D5CB] text-[#171916] text-xs font-mono font-medium hover:border-[#171916] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171916]"
+            title="Discipline Streak Counter"
           >
-            <Trophy className="w-4 h-4 text-emerald-400" />
+            <Flame className="w-3.5 h-3.5 fill-[#C88E32] text-[#C88E32]" />
+            <span>{rewards?.currentStreakDays || 5}d Streak</span>
+          </button>
+
+          {/* Points & Level Capsule */}
+          <button 
+            type="button"
+            onClick={() => setActiveTab('rewards')}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF8F3] border border-[#D9D5CB] text-[#171916] text-xs font-mono font-medium hover:border-[#171916] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171916]"
+            title="Earned Athletic Tier XP"
+          >
+            <Trophy className="w-3.5 h-3.5 text-[#4B4F48]" />
             <span>{rewards?.totalPoints || 680} XP</span>
-            <span className="text-[10px] text-slate-400 font-normal">| Lv.{rewards?.level || 2}</span>
+            <span className="text-[10px] text-[#4B4F48]">Lv.{rewards?.level || 2}</span>
           </button>
 
-          {/* User Profile avatar */}
-          <button 
-            onClick={() => setActiveTab('profile')}
-            className="flex items-center gap-2 p-1.5 pl-2.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 hover:border-slate-700 transition"
-          >
-            <span className="text-xs font-semibold hidden md:inline">{profile?.name || 'Alex Hunter'}</span>
-            <div className="w-7 h-7 rounded-md bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-xs font-bold text-white shadow-sm">
-              {profile?.name ? profile.name.charAt(0) : 'A'}
+          {/* Auth State & User Profile Controls */}
+          {currentUser ? (
+            <div className="flex items-center gap-2">
+              <button 
+                type="button"
+                onClick={() => setActiveTab('profile')}
+                className="flex items-center gap-2 p-1 pl-2.5 rounded-full bg-[#FAF8F3] border border-[#D9D5CB] text-[#171916] hover:border-[#171916] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171916]"
+                title="View Member Dossier & Biometrics"
+              >
+                <span className="text-xs font-medium hidden md:inline">{displayName}</span>
+                <div className="w-7 h-7 rounded-full bg-[#171916] flex items-center justify-center text-xs font-mono font-medium text-[#F4F1E9]">
+                  {initial}
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={logout}
+                title="Sign Out of Protocol"
+                className="p-2 rounded-full bg-[#FAF8F3] border border-[#D9D5CB] text-[#4B4F48] hover:text-[#171916] hover:border-[#171916] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171916]"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </div>
-          </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button 
+                type="button"
+                onClick={() => setActiveTab('profile')}
+                className="flex items-center gap-2 p-1 pl-2.5 rounded-full bg-[#FAF8F3] border border-[#D9D5CB] text-[#171916] hover:border-[#171916] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#171916]"
+                title="View Demo Dossier & Biometrics"
+              >
+                <span className="text-xs font-medium hidden md:inline">{displayName} (Demo)</span>
+                <div className="w-7 h-7 rounded-full bg-[#171916] flex items-center justify-center text-xs font-mono font-medium text-[#F4F1E9]">
+                  {initial}
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => openAuthModal('signin')}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#171916] text-[#F4F1E9] hover:bg-[#282B26] text-xs font-medium uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#C5D99A]"
+              >
+                <LogIn className="w-3.5 h-3.5 text-[#C5D99A]" />
+                <span className="hidden sm:inline">Sign In</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

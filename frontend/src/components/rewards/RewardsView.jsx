@@ -1,5 +1,7 @@
 import React from 'react';
 import { useAthly } from '../../context/AthlyContext';
+import { PageHeader } from '../common/PageHeader';
+import { DemoBadge } from '../common/DemoBadge';
 import { 
   Award, 
   Flame, 
@@ -14,8 +16,14 @@ import {
   PieChart 
 } from 'lucide-react';
 
+/**
+ * RewardsView
+ * Athletic discipline journal, streaks, and milestone badges redesigned with
+ * luxury wellness editorial aesthetic: Warm Ivory surfaces, hairline Stone borders,
+ * JetBrains Mono metrics, and intaglio-style badge emblems.
+ */
 export const RewardsView = () => {
-  const { rewards, showToast } = useAthly();
+  const { rewards, showToast, claimRewardGoal, dailyCheckIn } = useAthly();
 
   const getBadgeIcon = (iconName) => {
     switch (iconName) {
@@ -29,8 +37,12 @@ export const RewardsView = () => {
     }
   };
 
-  const handleClaim = (goalTitle, points) => {
-    showToast(`Claimed ${points} XP for ${goalTitle}!`);
+  const handleClaim = (goalId, goalTitle, points) => {
+    if (claimRewardGoal) {
+      claimRewardGoal(goalId, points);
+    } else {
+      showToast(`Claimed ${points} XP for ${goalTitle}!`);
+    }
   };
 
   const currentPoints = rewards?.totalPoints || 680;
@@ -38,101 +50,131 @@ export const RewardsView = () => {
   const currentStreak = rewards?.currentStreakDays || 5;
   const bestStreak = rewards?.bestStreakDays || 12;
 
-  // Level math (e.g. Level 2 is 500-1000 XP)
   const currentLevelBase = (level - 1) * 500;
   const nextLevelTarget = level * 500;
   const levelProgress = Math.min(100, Math.round(((currentPoints - currentLevelBase) / 500) * 100));
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-slate-800">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-emerald-400" />
-              <h1 className="text-xl font-bold text-white">Athly Gamification & Rewards Center</h1>
+    <div className="space-y-8">
+      {/* Editorial Page Header */}
+      <PageHeader
+        category="DISCIPLINE &bull; REWARDS JOURNAL"
+        title="Discipline, Streaks & Milestones"
+        subtitle="Tracking consistency as athletic virtue. Every recorded protocol session, plate analysis, and hydration target accrues toward your tier progression."
+        badge={<DemoBadge text="Curated Rewards Ledger" />}
+        actions={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={dailyCheckIn}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#171916] text-[#F4F1E9] hover:bg-[#282B26] text-xs font-mono transition-colors shadow-sm active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#C5D99A]" />
+              <span>Daily Check-In (+15 XP)</span>
+            </button>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-[#FAF8F3] border border-[#D9D5CB] text-xs font-mono text-[#171916]">
+              <Flame className="w-3.5 h-3.5 fill-[#C88E32] text-[#C88E32]" />
+              <span>{currentStreak}d Streak</span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              "Your Goal. Our Plan. Your Progress. <span className="text-emerald-400 font-semibold">Your Reward.</span>"
-            </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold text-sm">
-              <Flame className="w-4 h-4 fill-amber-400 animate-pulse" />
-              <span>{currentStreak} Days Streak</span>
-            </div>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Gamification Level & XP Progress Card */}
-      <div className="p-6 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 border border-emerald-500/30 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black text-lg shadow-glow-green">
+      {/* Tier & XP Progression Card */}
+      <div className="p-6 sm:p-7 rounded-lg bg-[#FAF8F3] border border-[#D9D5CB] space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#D9D5CB]">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded bg-[#171916] text-[#F4F1E9] flex items-center justify-center font-serif text-xl font-medium shrink-0">
               {level}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-extrabold text-white">Tier {level}: Active Performer</h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">
-                  LEVEL {level}
+                <h3 className="font-serif text-lg font-medium text-[#171916]">
+                  Tier {level}: Active Performer
+                </h3>
+                <span className="text-[9px] font-mono uppercase tracking-[0.16em] px-2 py-0.5 rounded bg-[#EBF2DC] text-[#282B26] border border-[#C5D99A]/80 font-medium">
+                  Tier {level}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-mono">
-                {currentPoints} XP Total &bull; Next tier in {nextLevelTarget - currentPoints} XP
+              <p className="text-xs text-[#4B4F48] font-mono mt-0.5">
+                {currentPoints} Total Protocol XP &bull; {nextLevelTarget - currentPoints} XP to Tier {level + 1}
               </p>
             </div>
           </div>
 
-          <div className="text-sm font-bold text-emerald-400 font-mono text-right">
-            {levelProgress}% to Level {level + 1}
+          <div className="text-right font-mono">
+            <div className="text-sm font-medium text-[#171916]">
+              {levelProgress}% Completed
+            </div>
+            <span className="text-[10px] text-[#4B4F48] uppercase tracking-wider">
+              Toward Tier {level + 1}
+            </span>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden p-0.5 border border-slate-700">
+        <div className="w-full bg-[#EBE7DC] h-2 rounded-full overflow-hidden">
           <div
-            className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all"
+            className="bg-[#171916] h-full rounded-full transition-all duration-500"
             style={{ width: `${levelProgress}%` }}
           />
         </div>
       </div>
 
-      {/* Daily & Weekly Goals */}
+      {/* Quests & Milestones Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Daily Goals */}
-        <div className="p-6 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-emerald-400" />
-              Today's Quests & Goals
-            </h3>
-            <span className="text-xs text-slate-400">Resets in 6h 18m</span>
+        {/* Daily Quests */}
+        <div className="p-6 sm:p-7 rounded-lg bg-[#FAF8F3] border border-[#D9D5CB] space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#D9D5CB]">
+            <div className="flex items-center gap-2.5">
+              <Trophy className="w-4 h-4 text-[#171916] stroke-[1.75]" />
+              <h3 className="font-serif text-lg font-medium text-[#171916]">
+                Today's Protocol Quests
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-[#4B4F48]">
+              Resets at midnight
+            </span>
           </div>
 
           <div className="space-y-2.5">
             {rewards?.dailyGoals?.map((g) => (
               <div
                 key={g.id}
-                className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-3 text-xs"
+                className="p-3.5 rounded bg-[#F4F1E9] border border-[#D9D5CB] flex items-center justify-between gap-3 text-xs"
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                      g.completed ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-500'
+                    className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${
+                      g.completed
+                        ? 'bg-[#171916] text-[#F4F1E9]'
+                        : 'bg-[#EBE7DC] text-[#4B4F48]'
                     }`}
                   >
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-3.5 h-3.5 stroke-[2]" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-white">{g.title}</h4>
-                    <p className="text-[11px] text-slate-400">{g.targetText}</p>
+                    <h4 className="font-medium text-[#171916] font-sans">{g.title}</h4>
+                    <p className="text-[11px] text-[#4B4F48]">{g.targetText}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono font-bold text-emerald-400">+{g.points} XP</span>
+                  <div className="font-mono text-xs font-medium text-[#171916] shrink-0">
+                    +{g.points} XP
+                  </div>
+                  {g.claimed ? (
+                    <span className="text-[10px] font-mono text-[#4B4F48] px-2 py-0.5 rounded bg-[#FAF8F3] border border-[#D9D5CB]">
+                      Claimed
+                    </span>
+                  ) : g.completed ? (
+                    <button
+                      type="button"
+                      onClick={() => handleClaim(g.id, g.title, g.points)}
+                      className="px-2.5 py-1 rounded bg-[#171916] hover:bg-[#282B26] text-[#F4F1E9] text-[10px] font-mono uppercase tracking-wider transition-all shadow-sm active:scale-95"
+                    >
+                      Claim
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -140,29 +182,38 @@ export const RewardsView = () => {
         </div>
 
         {/* Weekly Milestones */}
-        <div className="p-6 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-teal-400" />
-              Weekly Milestones & Challenges
-            </h3>
-            <span className="text-xs text-teal-400 font-mono">High XP Pool</span>
+        <div className="p-6 sm:p-7 rounded-lg bg-[#FAF8F3] border border-[#D9D5CB] space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-[#D9D5CB]">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-[#171916] stroke-[1.75]" />
+              <h3 className="font-serif text-lg font-medium text-[#171916]">
+                Weekly Milestone Challenges
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#4B4F48]">
+              Extended Pool
+            </span>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {rewards?.weeklyGoals?.map((g) => (
               <div
                 key={g.id}
-                className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2 text-xs"
+                className="p-3.5 rounded bg-[#F4F1E9] border border-[#D9D5CB] space-y-2 text-xs"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-white">{g.title}</span>
-                  <span className="font-mono font-bold text-teal-400">+{g.points} XP</span>
+                  <span className="font-medium text-[#171916] font-sans">{g.title}</span>
+                  <span className="font-mono text-xs font-medium text-[#171916]">
+                    +{g.points} XP
+                  </span>
                 </div>
-                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-teal-500 h-full rounded-full" style={{ width: `${g.progressPercent}%` }} />
+                <div className="w-full bg-[#EBE7DC] h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="bg-[#C5D99A] h-full rounded-full"
+                    style={{ width: `${g.progressPercent}%` }}
+                  />
                 </div>
-                <div className="flex justify-between text-[10px] text-slate-400">
+                <div className="flex justify-between text-[10px] font-mono text-[#4B4F48]">
                   <span>{g.targetText}</span>
                   <span>{g.progressPercent}%</span>
                 </div>
@@ -172,14 +223,16 @@ export const RewardsView = () => {
         </div>
       </div>
 
-      {/* Achievement Badges Collection */}
-      <div className="p-6 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            <Award className="w-4 h-4 text-emerald-400" />
-            Achievement Badges & Trophies
-          </h3>
-          <span className="text-xs text-slate-400">
+      {/* Intaglio Achievement Badges Collection */}
+      <div className="p-6 sm:p-7 rounded-lg bg-[#FAF8F3] border border-[#D9D5CB] space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-[#D9D5CB]">
+          <div className="flex items-center gap-2.5">
+            <Award className="w-4 h-4 text-[#171916] stroke-[1.75]" />
+            <h3 className="font-serif text-lg font-medium text-[#171916]">
+              Achievement Badges & Trophies
+            </h3>
+          </div>
+          <span className="text-xs font-mono text-[#4B4F48]">
             {rewards?.badges?.filter((b) => b.unlocked).length} of {rewards?.badges?.length} Unlocked
           </span>
         </div>
@@ -190,31 +243,41 @@ export const RewardsView = () => {
             return (
               <div
                 key={badge.code}
-                className={`p-4 rounded-xl border transition-all ${
+                className={`p-4 rounded border transition-colors ${
                   badge.unlocked
-                    ? 'bg-slate-950/70 border-emerald-500/30'
-                    : 'bg-slate-950/30 border-slate-800/60 opacity-60'
+                    ? 'bg-[#FAF8F3] border-[#D9D5CB]'
+                    : 'bg-[#F4F1E9] border-[#D9D5CB]/60 opacity-60'
                 }`}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3.5">
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    className={`w-9 h-9 rounded flex items-center justify-center shrink-0 ${
                       badge.unlocked
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-glow-green'
-                        : 'bg-slate-800 text-slate-500 border border-slate-700'
+                        ? 'bg-[#171916] text-[#F4F1E9]'
+                        : 'bg-[#EBE7DC] text-[#4B4F48]'
                     }`}
                   >
-                    {badge.unlocked ? <Icon className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
+                    {badge.unlocked ? (
+                      <Icon className="w-4 h-4 stroke-[1.75]" />
+                    ) : (
+                      <Lock className="w-3.5 h-3.5 stroke-[1.75]" />
+                    )}
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-xs font-bold text-white">{badge.title}</h4>
-                      <span className="text-[10px] font-mono text-emerald-400">+{badge.pointsReward} XP</span>
+                      <h4 className="text-xs font-serif font-medium text-[#171916]">
+                        {badge.title}
+                      </h4>
+                      <span className="text-[10px] font-mono text-[#4B4F48]">
+                        +{badge.pointsReward} XP
+                      </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">{badge.description}</p>
+                    <p className="text-[11px] text-[#4B4F48] leading-relaxed font-sans">
+                      {badge.description}
+                    </p>
                     {badge.unlocked && (
-                      <span className="text-[10px] text-emerald-400 font-semibold block pt-1">
-                        &bull; {badge.unlockedAt}
+                      <span className="text-[9px] font-mono text-[#4B4F48] block pt-1">
+                        Unlocked &bull; {badge.unlockedAt}
                       </span>
                     )}
                   </div>

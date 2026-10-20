@@ -1,51 +1,240 @@
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+// Bidirectional mapping between UI labels and Backend DTO tokens
+export const mapFitnessGoalToBackend = (goal) => {
+  switch (goal) {
+    case 'Fat Loss': return 'FAT_LOSS';
+    case 'Muscle Gain': return 'MUSCLE_GAIN';
+    case 'Endurance': return 'ENDURANCE';
+    case 'Maintenance': return 'MAINTENANCE';
+    default: return 'MUSCLE_GAIN';
+  }
+};
+
+export const mapFitnessGoalFromBackend = (goal) => {
+  switch (goal) {
+    case 'FAT_LOSS': return 'Fat Loss';
+    case 'MUSCLE_GAIN': return 'Muscle Gain';
+    case 'ENDURANCE': return 'Endurance';
+    case 'MAINTENANCE': return 'Maintenance';
+    default: return goal || 'Muscle Gain';
+  }
+};
+
+export const mapDietaryPreferenceToBackend = (pref) => {
+  switch (pref) {
+    case 'Non-Vegetarian': return 'NON_VEGETARIAN';
+    case 'Vegetarian': return 'VEGETARIAN';
+    case 'Vegan': return 'VEGAN';
+    case 'Keto': return 'KETO';
+    case 'Pescatarian': return 'PESCATARIAN';
+    default: return 'NON_VEGETARIAN';
+  }
+};
+
+export const mapDietaryPreferenceFromBackend = (pref) => {
+  switch (pref) {
+    case 'NON_VEGETARIAN': return 'Non-Vegetarian';
+    case 'VEGETARIAN': return 'Vegetarian';
+    case 'VEGAN': return 'Vegan';
+    case 'KETO': return 'Keto';
+    case 'PESCATARIAN': return 'Pescatarian';
+    default: return pref || 'Non-Vegetarian';
+  }
+};
+
+export const mapFitnessLevelToActivityLevel = (level) => {
+  switch (level) {
+    case 'Beginner': return 'LIGHTLY_ACTIVE';
+    case 'Intermediate': return 'MODERATELY_ACTIVE';
+    case 'Advanced': return 'VERY_ACTIVE';
+    case 'Elite': return 'VERY_ACTIVE';
+    default: return 'MODERATELY_ACTIVE';
+  }
+};
+
+export const mapActivityLevelToFitnessLevel = (level) => {
+  switch (level) {
+    case 'SEDENTARY': return 'Beginner';
+    case 'LIGHTLY_ACTIVE': return 'Beginner';
+    case 'MODERATELY_ACTIVE': return 'Intermediate';
+    case 'VERY_ACTIVE': return 'Advanced';
+    default: return 'Intermediate';
+  }
+};
+
+// Token getter callback registered by AuthContext
+let authTokenGetter = null;
+
+export const setAuthTokenGetter = (getter) => {
+  authTokenGetter = getter;
+};
+
+export const getAuthHeaders = async () => {
+  const headers = {};
+  if (typeof authTokenGetter === 'function') {
+    try {
+      const token = await authTokenGetter();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    } catch (e) {
+      console.warn('[ATHLY API] Failed to acquire auth token for headers:', e.message);
+    }
+  }
+  return headers;
+};
+
+const authenticatedFetch = async (url, options = {}) => {
+  const authHeaders = await getAuthHeaders();
+  const mergedHeaders = {
+    ...authHeaders,
+    ...(options.headers || {})
+  };
+  return fetch(url, {
+    ...options,
+    headers: mergedHeaders
+  });
+};
 
 /**
  * ATHLY API Client with transparent local fallback
  * Allows complete standalone frontend previewing and real-time backend communication.
+ * Clearly flags fallback data so simulated baselines are distinguishable from live responses.
  */
 export const apiClient = {
-  // Profile
+  // Service Health & Connectivity Check
+  async checkHealth() {
+    try {
+      const res = await fetch(`${API_BASE}/health`);
+      if (!res.ok) {
+        throw new Error(`Health check returned HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      return { ...data, isOnline: true };
+    } catch (e) {
+      console.warn(`[ATHLY API] Health check failed at ${API_BASE}/health:`, e.message);
+      return { status: 'OFFLINE', database: 'UNKNOWN', isOnline: false, error: e.message, _isFallback: true };
+    }
+  },
+
+  // Profile (Current Member Endpoints: /api/profile/me)
   async getProfile() {
     try {
-      const res = await fetch(`${API_BASE}/profile`);
-      if (!res.ok) throw new Error('API request failed');
-      return await res.json();
-    } catch (e) {
-      console.info('[ATHLY API] Using default/cached profile data');
+      const res = await authenticatedFetch(`${API_BASE}/profile/me`);
+      if (res.status === 404) {
+        console.info('[ATHLY API] Profile not yet initialized in database for current member.');
+        return {
+          id: 'dev-local-user',
+          name: '',
+          email: '',
+          age: 25,
+          height: 175,
+          weight: 75,
+          fitnessLevel: 'Intermediate',
+          fitnessGoal: 'Muscle Gain',
+          foodPreference: 'Non-Vegetarian',
+          gender: 'Male',
+          _isEmptyProfile: true,
+          _isFallback: false,
+          _isLive: true
+        };
+      }
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      const data = await res.json();
       return {
-        id: 1,
+        id: data.userId || 'dev-local-user',
+        name: data.name,
+        email: data.email,
+        age: data.age,
+        height: data.height,
+        weight: data.weight,
+        targetWeight: data.targetWeight,
+        fitnessLevel: mapActivityLevelToFitnessLevel(data.activityLevel),
+        fitnessGoal: mapFitnessGoalFromBackend(data.fitnessGoal),
+        foodPreference: mapDietaryPreferenceFromBackend(data.dietaryPreference),
+        gender: data.gender,
+        bmi: data.bmi,
+        _isFallback: false,
+        _isLive: true
+      };
+    } catch (e) {
+      console.warn('[ATHLY API] GET /profile/me failed. Falling back to demo baseline:', e.message);
+      return {
+        id: 'demo-baseline',
         name: "Alex Hunter",
+        email: "alex.hunter@example.com",
         age: 27,
         height: 178,
         weight: 75.5,
         fitnessLevel: "Intermediate",
         fitnessGoal: "Muscle Gain",
         foodPreference: "Non-Vegetarian",
-        gender: "Male"
+        gender: "Male",
+        _isFallback: true,
+        _error: e.message
       };
     }
   },
 
   async updateProfile(profileData) {
+    const payload = {
+      name: profileData.name,
+      email: profileData.email || 'alex.hunter@example.com',
+      age: Number(profileData.age),
+      gender: profileData.gender,
+      height: Number(profileData.height),
+      weight: Number(profileData.weight),
+      targetWeight: profileData.targetWeight ? Number(profileData.targetWeight) : null,
+      fitnessGoal: mapFitnessGoalToBackend(profileData.fitnessGoal),
+      activityLevel: mapFitnessLevelToActivityLevel(profileData.fitnessLevel),
+      dietaryPreference: mapDietaryPreferenceToBackend(profileData.foodPreference)
+    };
+
     try {
-      const res = await fetch(`${API_BASE}/profile`, {
+      const res = await authenticatedFetch(`${API_BASE}/profile/me`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profileData)
+        body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error('API request failed');
-      return await res.json();
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        const errMsg = errorData?.message || errorData?.error || `HTTP ${res.status}: ${res.statusText}`;
+        throw new Error(errMsg);
+      }
+      const saved = await res.json();
+      return {
+        id: saved.userId,
+        name: saved.name,
+        email: saved.email,
+        age: saved.age,
+        height: saved.height,
+        weight: saved.weight,
+        targetWeight: saved.targetWeight,
+        fitnessLevel: mapActivityLevelToFitnessLevel(saved.activityLevel),
+        fitnessGoal: mapFitnessGoalFromBackend(saved.fitnessGoal),
+        foodPreference: mapDietaryPreferenceFromBackend(saved.dietaryPreference),
+        gender: saved.gender,
+        bmi: saved.bmi,
+        _isFallback: false,
+        _isLive: true
+      };
     } catch (e) {
-      console.info('[ATHLY API] Local update for profile data');
-      return { ...profileData, id: 1 };
+      console.warn('[ATHLY API] PUT /profile/me failed. Changes kept in local state only:', e.message);
+      return {
+        ...profileData,
+        _isFallback: true,
+        _error: e.message
+      };
     }
   },
 
   // Fitness Planner
   async getFitnessPlan() {
     try {
-      const res = await fetch(`${API_BASE}/planner`);
+      const res = await authenticatedFetch(`${API_BASE}/planner`);
       if (!res.ok) throw new Error('API request failed');
       return await res.json();
     } catch (e) {
@@ -156,15 +345,27 @@ export const apiClient = {
   // Meal Analysis
   async analyzeMeal(mealData) {
     try {
-      const res = await fetch(`${API_BASE}/meals/analyze`, {
+      const payload = {
+        userId: mealData.userId || 'dev-local-user',
+        mealType: mealData.mealType || 'LUNCH',
+        imageBase64: mealData.imageUrl || mealData.imageBase64 || 'data:image/jpeg;base64,sample',
+        userNotes: mealData.hintOrDescription || '',
+        hintOrDescription: mealData.hintOrDescription || ''
+      };
+      const res = await authenticatedFetch(`${API_BASE}/meals/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mealData)
+        body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error('API request failed');
-      return await res.json();
+      if (!res.ok) throw new Error(`API request failed with HTTP ${res.status}`);
+      const data = await res.json();
+      return {
+        ...data,
+        imageUrl: mealData.imageUrl || data.imageUrl || null,
+        isDemo: false
+      };
     } catch (e) {
-      console.info('[ATHLY API] Simulation response for Meal Analysis');
+      console.info('[ATHLY API] Simulation response for Meal Analysis:', e.message);
       const hint = (mealData.hintOrDescription || '').toLowerCase();
       let foodName = "Grilled Herb Chicken Breast with Brown Rice & Broccoli";
       let cal = 520, p = 48, c = 45, f = 12, fiber = 7;
@@ -174,24 +375,31 @@ export const apiClient = {
         foodName = "Pan-Seared Atlantic Salmon with Steamed Asparagus & Quinoa";
         cal = 580; p = 42; c = 38; f = 24; fiber = 6;
         insight = "Outstanding high-protein meal rich in Omega-3 fatty acids! Perfect for recovery and joint health.";
-      } else if (hint.includes('salad') || hint.includes('avocado') || hint.includes('vegan')) {
+      } else if (hint.includes('salad') || hint.includes('avocado') || hint.includes('vegan') || hint.includes('chickpea')) {
         foodName = "Mediterranean Quinoa Avocado Bowl with Chickpeas";
         cal = 460; p = 18; c = 54; f = 20; fiber = 12;
         insight = "Dense in fiber and monounsaturated healthy fats. Consider adding plant protein to optimize synthesis.";
-      } else if (hint.includes('egg') || hint.includes('toast')) {
+      } else if (hint.includes('egg') || hint.includes('toast') || hint.includes('sourdough')) {
         foodName = "Poached Eggs on Sourdough with Sliced Avocado";
         cal = 420; p = 22; c = 32; f = 21; fiber = 5;
         insight = "Excellent morning fuel offering choline and sustained complex energy for peak performance.";
-      } else if (hint.includes('shake') || hint.includes('protein') || hint.includes('smoothie')) {
+      } else if (hint.includes('shake') || hint.includes('protein') || hint.includes('smoothie') || hint.includes('berry')) {
         foodName = "Whey Protein Berry Smoothie Bowl with Almond Butter";
         cal = 380; p = 36; c = 34; f = 9; fiber = 7;
         insight = "Rapid absorbing amino acids with powerful antioxidant support. Ideal post-workout.";
+      } else if (hint.trim().length > 0) {
+        foodName = hint
+          .split(' ')
+          .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(' ') + " Plate";
+      } else if (mealData.imageUrl) {
+        foodName = "Chef's Wholesome Athletic Plate";
       }
 
       return {
         logId: Date.now(),
         identifiedFood: foodName,
-        confidence: 0.96,
+        confidence: 0.94,
         mealType: mealData.mealType || 'LUNCH',
         totalCalories: cal,
         totalProtein: p,
@@ -205,10 +413,12 @@ export const apiClient = {
         consumedProteinToday: 132,
         remainingProteinToday: 33,
         aiDietaryInsight: insight,
+        imageUrl: mealData.imageUrl || null,
+        isDemo: true,
         detectedItems: [
-          { name: "Primary Protein Portion", estimatedPortion: "180g", calories: cal * 0.55, protein: p * 0.85, carbs: 0, fats: f * 0.4 },
-          { name: "Complex Carb Base", estimatedPortion: "140g", calories: cal * 0.35, protein: p * 0.10, carbs: c * 0.85, fats: f * 0.2 },
-          { name: "Fresh Greens & Veggies", estimatedPortion: "100g", calories: cal * 0.10, protein: p * 0.05, carbs: c * 0.15, fats: f * 0.4 }
+          { name: "Primary Protein Portion", estimatedPortion: "180g", calories: Math.round(cal * 0.55), protein: Math.round(p * 0.85), carbs: 0, fats: Math.round(f * 0.4) },
+          { name: "Complex Carb Base", estimatedPortion: "140g", calories: Math.round(cal * 0.35), protein: Math.round(p * 0.10), carbs: Math.round(c * 0.85), fats: Math.round(f * 0.2) },
+          { name: "Fresh Greens & Veggies", estimatedPortion: "100g", calories: Math.round(cal * 0.10), protein: Math.round(p * 0.05), carbs: Math.round(c * 0.15), fats: Math.round(f * 0.4) }
         ]
       };
     }
@@ -216,7 +426,7 @@ export const apiClient = {
 
   async getTodayMeals() {
     try {
-      const res = await fetch(`${API_BASE}/meals/today`);
+      const res = await authenticatedFetch(`${API_BASE}/meals/today`);
       if (!res.ok) throw new Error('API request failed');
       return await res.json();
     } catch (e) {
@@ -261,7 +471,7 @@ export const apiClient = {
   // Activity Tracking
   async getTodayActivity() {
     try {
-      const res = await fetch(`${API_BASE}/activity/today`);
+      const res = await authenticatedFetch(`${API_BASE}/activity/today`);
       if (!res.ok) throw new Error('API request failed');
       return await res.json();
     } catch (e) {
@@ -281,7 +491,7 @@ export const apiClient = {
 
   async logActivity(data) {
     try {
-      const res = await fetch(`${API_BASE}/activity/log`, {
+      const res = await authenticatedFetch(`${API_BASE}/activity/log`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -295,7 +505,7 @@ export const apiClient = {
 
   async addWater(amountMl = 250) {
     try {
-      const res = await fetch(`${API_BASE}/activity/water`, {
+      const res = await authenticatedFetch(`${API_BASE}/activity/water`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amountMl })
@@ -309,7 +519,7 @@ export const apiClient = {
 
   async addSteps(steps = 500) {
     try {
-      const res = await fetch(`${API_BASE}/activity/steps`, {
+      const res = await authenticatedFetch(`${API_BASE}/activity/steps`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ steps })
@@ -324,7 +534,7 @@ export const apiClient = {
   // Progress & Analytics & AI Feedback
   async getDailyProgress() {
     try {
-      const res = await fetch(`${API_BASE}/progress/daily`);
+      const res = await authenticatedFetch(`${API_BASE}/progress/daily`);
       if (!res.ok) throw new Error('API request failed');
       return await res.json();
     } catch (e) {
@@ -353,7 +563,7 @@ export const apiClient = {
 
   async getWeeklyProgress() {
     try {
-      const res = await fetch(`${API_BASE}/progress/weekly`);
+      const res = await authenticatedFetch(`${API_BASE}/progress/weekly`);
       if (!res.ok) throw new Error('API request failed');
       return await res.json();
     } catch (e) {
@@ -377,7 +587,7 @@ export const apiClient = {
 
   async getAiFeedback() {
     try {
-      const res = await fetch(`${API_BASE}/progress/ai-feedback`);
+      const res = await authenticatedFetch(`${API_BASE}/progress/ai-feedback`);
       if (!res.ok) throw new Error('API request failed');
       return await res.json();
     } catch (e) {
@@ -401,7 +611,7 @@ export const apiClient = {
   // Rewards
   async getRewardSummary() {
     try {
-      const res = await fetch(`${API_BASE}/rewards/summary`);
+      const res = await authenticatedFetch(`${API_BASE}/rewards/summary`);
       if (!res.ok) throw new Error('API request failed');
       return await res.json();
     } catch (e) {

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  */
 public class UserProfileDto {
 
-    @NotBlank(message = "User ID is required")
+    // Note: userId is populated securely by server-side identity resolver for /me endpoints
     private String userId;
 
     @NotBlank(message = "Name is required")

@@ -8,6 +8,43 @@ export default {
   theme: {
     extend: {
       colors: {
+        // ATHLY V2 Luxury Wellness Design Tokens
+        graphite: {
+          DEFAULT: '#171916',
+          950: '#0E100D',
+          900: '#171916',
+          850: '#1F221E',
+          800: '#282B26',
+          700: '#383C35',
+          600: '#4B4F48',
+          500: '#62675F',
+        },
+        ivory: {
+          DEFAULT: '#F4F1E9',
+          50: '#FAF8F3',
+          100: '#F4F1E9',
+          200: '#EBE7DC',
+          300: '#DFDBD0',
+          400: '#CEC8B9',
+        },
+        sage: {
+          DEFAULT: '#C5D99A',
+          100: '#EBF2DC',
+          200: '#D8E6BC',
+          300: '#C5D99A',
+          400: '#B2CA80',
+          500: '#9EB866',
+          hover: '#B4CB85',
+        },
+        stone: {
+          DEFAULT: '#D9D5CB',
+          100: '#F2EFE8',
+          200: '#E6E2D8',
+          300: '#D9D5CB',
+          400: '#C4BFB4',
+          500: '#ABA494',
+        },
+        // Backward compatibility for existing dashboard screens
         athly: {
           50: '#f0fdf4',
           100: '#dcfce7',
@@ -29,9 +66,13 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['Fraunces', 'Playfair Display', 'Georgia', 'serif'],
+        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
       boxShadow: {
+        'soft-elevation': '0 8px 30px rgba(23, 25, 22, 0.06)',
+        'soft-glow': '0 0 35px -5px rgba(197, 217, 154, 0.25)',
         'glow-green': '0 0 25px -5px rgba(34, 197, 94, 0.3)',
         'glow-cyan': '0 0 25px -5px rgba(6, 182, 212, 0.3)',
       }
